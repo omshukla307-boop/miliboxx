@@ -175,6 +175,9 @@ export function AppProvider({ children }) {
 
   // ── Refresh containers every 30 seconds ────────────────────────
   useEffect(() => {
+    const token = sessionStorage.getItem('millibox_token') || localStorage.getItem('millibox_token');
+    if (!token && window.location.pathname === '/login') return;
+
     fetchContainers();
     fetchAlerts();
     const interval = setInterval(fetchContainers, 30000);

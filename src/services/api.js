@@ -27,8 +27,12 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401 && !err.config?.url?.includes('/auth/login')) {
       sessionStorage.removeItem('millibox_token');
+      sessionStorage.removeItem('millibox_user');
       localStorage.removeItem('millibox_token');
-      window.location.assign('/login');
+      localStorage.removeItem('millibox_user');
+      if (window.location.pathname !== '/login') {
+        window.location.assign('/login');
+      }
     }
     return Promise.reject(err);
   }
