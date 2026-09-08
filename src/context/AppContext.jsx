@@ -61,35 +61,49 @@ const initialState = {
 // ── Helpers ───────────────────────────────────
 // Normalise a container object from FastAPI → internal shape
 function normalizeContainer(raw) {
+  const id = raw.device_id ?? raw.id ?? raw.container_id ?? 'BOX-001';
+  const rawStatus = (raw.status ?? 'SECURED').toUpperCase();
+  const status = (rawStatus === 'ACTIVE' || rawStatus === 'ONLINE') ? 'SECURED' : rawStatus;
+  const locName = raw.location_label ?? raw.location_name ?? raw.location?.name ?? 'Tactical Base';
+  const lat = raw.latitude ?? raw.location?.lat ?? (id.includes('02') ? 19.0760 : 28.6139);
+  const lng = raw.longitude ?? raw.location?.lng ?? (id.includes('02') ? 72.8777 : 77.2090);
+
   return {
-    id:         raw.id          ?? raw.container_id,
-    status:     raw.status,
-    lock:       raw.lock_status ?? raw.lock,
-    temp:       raw.temperature ?? raw.temp,
-    humidity:   raw.humidity,
-    battery:    raw.battery,
-    speed:      raw.speed       ?? 0,
+    id: id,
+    name: raw.name ?? id,
+    status: status,
+    lock: raw.lock_status ?? raw.lock ?? 'SECURED',
+    temp: raw.temperature ?? raw.temp ?? 24.2,
+    humidity: raw.humidity ?? 55,
+    battery: raw.battery ?? 92,
+    speed: raw.speed ?? 0,
     location: {
-      name: raw.location_name   ?? raw.location?.name ?? 'Unknown',
-      lat:  raw.latitude        ?? raw.location?.lat  ?? 20.0,
-      lng:  raw.longitude       ?? raw.location?.lng  ?? 78.0,
+      name: locName,
+      lat: lat,
+      lng: lng,
     },
-    route:      raw.route ?? [],
-    lastEvent:  raw.last_event  ?? raw.lastEvent ?? '',
-    updatedAgo: raw.updated_ago ?? raw.updatedAgo ?? 'just now',
+    route: raw.route ?? [],
+    lastEvent: raw.last_event ?? raw.lastEvent ?? 'Normal monitoring',
+    updatedAgo: raw.updated_ago ?? raw.updatedAgo ?? (raw.last_seen ? new Date(raw.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'just now'),
   };
 }
 
 // Normalise an alert object from FastAPI → internal shape
 function normalizeAlert(raw) {
+  const isResolved = raw.resolved === true || raw.status === 'RESOLVED';
+  const status = isResolved ? 'RESOLVED' : (raw.status ? String(raw.status).toUpperCase() : 'UNREAD');
+  const timestamp = raw.created_at
+    ? new Date(raw.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : (raw.timestamp ?? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+
   return {
-    id:        raw.id          ?? raw.alert_id,
-    container: raw.container   ?? raw.container_id,
-    event:     raw.event       ?? raw.message,
-    severity:  (raw.severity   ?? raw.level ?? 'INFO').toUpperCase(),
-    timestamp: raw.timestamp   ?? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-    location:  raw.location    ?? '',
-    status:    (raw.status     ?? 'UNREAD').toUpperCase(),
+    id: raw.id ?? raw.alert_id ?? `ALT-${Date.now()}`,
+    container: raw.device_id ?? raw.container ?? raw.container_id ?? 'ESP32_MILITARY_BOX_01',
+    event: raw.message ?? raw.event ?? raw.alert_type ?? 'Alert detected',
+    severity: (raw.severity ?? raw.level ?? 'INFO').toUpperCase(),
+    timestamp: timestamp,
+    location: raw.location ?? (String(raw.device_id).includes('02') ? 'Bravo Base' : 'Alpha Base'),
+    status: status,
   };
 }
 
@@ -138,6 +152,7 @@ export function AppProvider({ children }) {
 
   // ── WebSocket handler — called for every pushed alert ──────────
   const handleWsMessage = useCallback((data) => {
+    if (!data || data.status === 'connected' || data.message === 'WebSocket connected') return;
     const alert = normalizeAlert(data);
     dispatch({ type: 'ADD_ALERT', payload: alert });
   }, []);
