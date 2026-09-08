@@ -61,13 +61,19 @@ export function AuthProvider({ children }) {
 
   } catch (error) {
     console.error('Login error:', error);
+    let message = error.response?.data?.detail;
+    if (!message) {
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        message = 'The server is taking longer than usual to respond (Render is waking up from sleep). Please wait a few seconds and try again.';
+      } else if (error.request) {
+        message = 'Cannot reach backend server. The free-tier server may be waking up. Please wait ~15 seconds and try again.';
+      } else {
+        message = error.message || 'Unable to reach the authentication server.';
+      }
+    }
     return {
       ok: false,
-      message: error.response?.data?.detail || (
-        error.request
-          ? 'Cannot connect to the authentication server. Please redeploy the backend with CORS enabled.'
-          : error.message
-      ) || 'Unable to reach the authentication server.',
+      message,
     };
   }
 };

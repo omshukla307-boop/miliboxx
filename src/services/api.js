@@ -10,7 +10,7 @@ export const WS_URL   = import.meta.env.VITE_WS_URL || BASE_URL.replace(/^http/,
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 8000,
+  timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -107,7 +107,10 @@ export const authAPI = {
    * Returns: { access_token, token_type, officer: {...} }
    */
   login: (email, password) =>
-    api.post('/auth/login', { email, password }),
+    api.post('/auth/login', {
+      email: email.trim().toLowerCase(),
+      password: password.trim(),
+    }),
 };
 
 export default api;
