@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MILITARY BOX // Tactical Security & IoT Telemetry Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body class="theme-cyber">
+
+  <!-- Animated Background Orbs & HUD Mesh -->
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+  <div class="grid-bg"></div>
+  <div class="scanline"></div>
+
+  <!-- Header Section -->
+  <header class="tactical-header">
+    <div class="header-left">
+      <div class="radar-container">
+        <canvas id="radar-canvas" width="48" height="48"></canvas>
+      </div>
+      <div class="brand-title">
+        <h1>TACTICAL CONTAINER COMMAND <span class="version-tag">HARDENED v1.2</span></h1>
+        <div class="sub-title">SECURE HMAC-SHA256 TELEMETRY & BLOCKCHAIN AUDIT LEDGER</div>
+      </div>
+    </div>
+
+    <!-- Theme Switcher & Status Bar -->
+    <div class="system-status-bar">
+      <!-- Theme Selection Pill -->
+      <div class="theme-selector">
+        <span class="theme-lbl">THEME:</span>
+        <button class="theme-btn active" data-theme="cyber" style="--t-color: #00f2fe;" title="Cyber Neon"></button>
+        <button class="theme-btn" data-theme="matrix" style="--t-color: #10b981;" title="Matrix Green"></button>
+        <button class="theme-btn" data-theme="solar" style="--t-color: #ffb703;" title="Solar Amber"></button>
+        <button class="theme-btn" data-theme="royal" style="--t-color: #8b5cf6;" title="Royal Purple"></button>
+      </div>
+
+      <div class="status-chip" id="backend-status-chip">
+        <span class="indicator pulsing yellow"></span> BACKEND CONNECTING...
+      </div>
+      <div class="status-chip" id="supabase-status-chip">
+        <span class="indicator green"></span> SUPABASE DB
+      </div>
+      <div class="status-chip" id="blockchain-status-chip">
+        <span class="indicator green"></span> ANVIL EVM
+      </div>
+      <button class="sound-toggle-btn" id="sound-toggle" title="Toggle Alarm Audio">
+        <span id="sound-icon">🔊</span> AUDIO: ON
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Layout Container -->
+  <main class="dashboard-grid">
+
+    <!-- Metrics Row (Top 5 Vibrant Cards) -->
+    <section class="metrics-row">
+      
+      <!-- Card 1: Temp -->
+      <div class="card metric-card card-accent-red" id="temp-card">
+        <div class="accent-top-bar"></div>
+        <div class="card-top">
+          <span class="card-icon">🔥</span>
+          <span class="card-label">INTERNAL TEMP</span>
+        </div>
+        <div class="metric-body">
+          <div class="gauge-value-row">
+            <span class="metric-value" id="val-temp">-- °C</span>
+            <div class="sparkline-wrapper">
+              <canvas id="temp-sparkline" width="60" height="24"></canvas>
+            </div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill fill-gradient-orange" id="fill-temp" style="width: 0%;"></div></div>
+        </div>
+        <div class="card-footer">
+          <span>SAFE THRESHOLD: &lt; 45.0 °C</span>
+          <span class="status-tag tag-green" id="tag-temp">NORMAL</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Humidity -->
+      <div class="card metric-card card-accent-cyan" id="humidity-card">
+        <div class="accent-top-bar"></div>
+        <div class="card-top">
+          <span class="card-icon">💧</span>
+          <span class="card-label">HUMIDITY LEVEL</span>
+        </div>
+        <div class="metric-body">
+          <div class="gauge-value-row">
+            <span class="metric-value" id="val-humidity">-- %</span>
+            <div class="sparkline-wrapper">
+              <canvas id="humidity-sparkline" width="60" height="24"></canvas>
+            </div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill fill-gradient-cyan" id="fill-humidity" style="width: 0%;"></div></div>
+        </div>
+        <div class="card-footer">
+          <span>OPTIMAL: 30% - 60%</span>
+          <span class="status-tag tag-cyan" id="tag-humidity">NORMAL</span>
+        </div>
+      </div>
+
+      <!-- Card 3: Vibration Shock -->
+      <div class="card metric-card card-accent-amber" id="vibration-card">
+        <div class="accent-top-bar"></div>
+        <div class="card-top">
+          <span class="card-icon">⚡</span>
+          <span class="card-label">SHOCK / VIBRATION</span>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value text-gradient-green" id="val-vibration">CLEAR</span>
+          <div class="sensor-indicator-box" id="box-vibration">
+            <span class="sensor-dot dot-green"></span> NO IMPACT DETECTED
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>PIEZO SHOCK SENSOR</span>
+          <span class="status-tag tag-green" id="tag-vibration">STABLE</span>
+        </div>
+      </div>
+
+      <!-- Card 4: Door Lock -->
+      <div class="card metric-card card-accent-purple" id="door-card">
+        <div class="accent-top-bar"></div>
+        <div class="card-top">
+          <span class="card-icon">🔒</span>
+          <span class="card-label">CONTAINER DOOR</span>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value text-gradient-green" id="val-door">LOCKED</span>
+          <div class="sensor-indicator-box" id="box-door">
+            <span class="sensor-dot dot-green"></span> TAMPER SWITCH SEALED
+          </div>
+        </div>
+        <div class="card-footer">
+          <span>OPTICAL & SWITCH SEAL</span>
+          <span class="status-tag tag-green" id="tag-door">SECURE</span>
+        </div>
+      </div>
+
+      <!-- Card 5: Battery -->
+      <div class="card metric-card card-accent-green" id="battery-card">
+        <div class="accent-top-bar"></div>
+        <div class="card-top">
+          <span class="card-icon">🔋</span>
+          <span class="card-label">BATTERY VOLTAGE</span>
+        </div>
+        <div class="metric-body">
+          <span class="metric-value" id="val-battery">-- V</span>
+          <div class="progress-bar"><div class="progress-fill fill-gradient-green" id="fill-battery" style="width: 0%;"></div></div>
+        </div>
+        <div class="card-footer">
+          <span>MIN VOLTAGE: 3.4 V</span>
+          <span class="status-tag tag-green" id="tag-battery">100%</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Main Content Columns -->
+    <div class="dashboard-columns">
+
+      <!-- Left Column: Controls, Map, Devices -->
+      <div class="col left-col">
+
+        <!-- Telemetry Simulator & Action Controls -->
+        <div class="card control-card">
+          <div class="accent-top-bar bar-gradient-cyan"></div>
+          <div class="card-header-styled">
+            <h3>🎮 ESP32 TELEMETRY SIMULATOR</h3>
+            <span class="badge-vibrant badge-cyan">HMAC-SHA256 SIGNED</span>
+          </div>
+          <p class="control-desc">Trigger signed telemetry frames or simulate real-time physical tamper events from the hardware microcontroller.</p>
+          <div class="action-buttons">
+            <button class="btn btn-vibrant-emerald" id="btn-sim-normal">
+              <span class="btn-icon">▶</span> SEND NORMAL TELEMETRY
+            </button>
+            <button class="btn btn-vibrant-crimson" id="btn-sim-alert">
+              <span class="btn-icon">🚨</span> TRIGGER TAMPER ALERT
+            </button>
+            <button class="btn btn-vibrant-purple" id="btn-refresh">
+              <span class="btn-icon">🔄</span> REFRESH DATA
+            </button>
+          </div>
+          <div class="terminal-box" id="sim-feedback">
+            <span class="prompt">$</span> System ready. Click a control button to transmit signed telemetry payload.
+          </div>
+        </div>
+
+        <!-- Tactical Satellite Map Canvas -->
+        <div class="card map-card">
+          <div class="accent-top-bar bar-gradient-purple"></div>
+          <div class="card-header-styled">
+            <h3>📍 SATELLITE GEOLOCATION TRACKER</h3>
+            <span class="badge-vibrant badge-emerald" id="gps-lock-tag">GPS LOCK: ACTIVE</span>
+          </div>
+          <div class="map-wrapper">
+            <canvas id="map-canvas" width="480" height="180"></canvas>
+          </div>
+          <div class="map-coords-bar">
+            <div><span class="lbl">LAT:</span> <span class="val val-cyan" id="val-lat">28.6139° N</span></div>
+            <div><span class="lbl">LNG:</span> <span class="val val-purple" id="val-lng">77.2090° E</span></div>
+            <div><span class="lbl">ALT:</span> <span class="val val-amber">214 M</span></div>
+            <div><span class="lbl">SIGNAL:</span> <span class="val val-green">100% EXCELLENT</span></div>
+          </div>
+        </div>
+
+        <!-- Container Inventory & Active Devices -->
+        <div class="card inventory-card">
+          <div class="accent-top-bar bar-gradient-amber"></div>
+          <div class="card-header-styled">
+            <h3>📦 REGISTERED CONTAINER INVENTORY</h3>
+            <span class="badge-vibrant badge-amber" id="device-count-tag">1 ACTIVE</span>
+          </div>
+          <div class="list-feed" id="device-list">
+            <div class="loading-state">Scanning container inventory...</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Security Alerts, HMAC Verification, Blockchain Ledger -->
+      <div class="col right-col">
+
+        <!-- Critical Security Violations Panel -->
+        <div class="card alerts-card">
+          <div class="accent-top-bar bar-gradient-crimson"></div>
+          <div class="card-header-styled">
+            <div class="header-title-group">
+              <h3>🚨 SECURITY VIOLATION ALERTS</h3>
+              <span class="alert-counter" id="alert-count">0</span>
+            </div>
+            <div class="filter-tabs" id="alert-filter-tabs">
+              <button class="tab-btn active" data-filter="ALL">ALL</button>
+              <button class="tab-btn" data-filter="CRITICAL">CRITICAL</button>
+              <button class="tab-btn" data-filter="WARNING">WARNING</button>
+            </div>
+          </div>
+          <div class="list-feed scrollable" id="alerts-feed">
+            <div class="empty-state">No security violations detected.</div>
+          </div>
+        </div>
+
+        <!-- Security Audit & HMAC Signatures -->
+        <div class="card audit-card">
+          <div class="accent-top-bar bar-gradient-cyan"></div>
+          <div class="card-header-styled">
+            <h3>🛡️ HMAC SECURITY & ANTI-TAMPER AUDIT</h3>
+            <span class="badge-vibrant badge-cyan">REPLAY PROTECTION</span>
+          </div>
+          <div class="list-feed scrollable" id="audit-feed">
+            <div class="empty-state">Fetching audit records...</div>
+          </div>
+        </div>
+
+        <!-- Blockchain Ledger Events -->
+        <div class="card blockchain-card">
+          <div class="accent-top-bar bar-gradient-purple"></div>
+          <div class="card-header-styled">
+            <h3>⛓️ ANVIL EVM BLOCKCHAIN AUDIT LEDGER</h3>
+            <span class="badge-vibrant badge-purple">CONTRACT: ContainerAudit</span>
+          </div>
+          <div class="list-feed scrollable" id="blockchain-feed">
+            <div class="empty-state">Connecting to EVM blockchain...</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
