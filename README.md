@@ -2,6 +2,14 @@
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
+## Project Layout
+
+- `src/` contains the React frontend.
+- `backend/` contains the existing backend service and blockchain integration.
+- `backend/fastapi/` contains the FastAPI service imported from the `Military_Box_backend` repository.
+
+To run the imported FastAPI service, install `backend/fastapi/requirements.txt` and start it from that directory with `uvicorn app.main:app --reload`.
+
 Currently, two official plugins are available:
 
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
