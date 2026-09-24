@@ -1,5 +1,10 @@
 [
   {
+    "type": "constructor",
+    "inputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
     "type": "function",
     "name": "getContainerEventIds",
     "inputs": [
@@ -14,6 +19,62 @@
         "name": "",
         "type": "uint256[]",
         "internalType": "uint256[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getContainerEvents",
+    "inputs": [
+      {
+        "name": "containerId",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct ContainerAudit.AuditEvent[]",
+        "components": [
+          {
+            "name": "eventId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "containerId",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "eventType",
+            "type": "uint8",
+            "internalType": "enum ContainerAudit.EventType"
+          },
+          {
+            "name": "timestamp",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "latitude",
+            "type": "int256",
+            "internalType": "int256"
+          },
+          {
+            "name": "longitude",
+            "type": "int256",
+            "internalType": "int256"
+          },
+          {
+            "name": "details",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
       }
     ],
     "stateMutability": "view"
@@ -76,6 +137,19 @@
   },
   {
     "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "recordEvent",
     "inputs": [
       {
@@ -126,13 +200,13 @@
       {
         "name": "containerId",
         "type": "string",
-        "indexed": false,
+        "indexed": true,
         "internalType": "string"
       },
       {
         "name": "eventType",
         "type": "uint8",
-        "indexed": false,
+        "indexed": true,
         "internalType": "enum ContainerAudit.EventType"
       },
       {
@@ -140,6 +214,24 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      },
+      {
+        "name": "latitude",
+        "type": "int256",
+        "indexed": false,
+        "internalType": "int256"
+      },
+      {
+        "name": "longitude",
+        "type": "int256",
+        "indexed": false,
+        "internalType": "int256"
+      },
+      {
+        "name": "details",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
       }
     ],
     "anonymous": false

@@ -20,8 +20,11 @@
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
 const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
 
-// Replace with your laptop/server IP address
-const char* FASTAPI_SERVER_URL = "http://192.168.1.5:8000/api/v1/telemetry";
+// Production Cloud URL (Render Backend):
+const char* FASTAPI_SERVER_URL = "https://military-box-backend.onrender.com/api/telemetry";
+
+// Local Development Fallback (Uncomment if testing locally on same Wi-Fi network):
+// const char* FASTAPI_SERVER_URL = "http://192.168.1.5:8000/telemetry";
 
 // ESP32 Device Secret Authentication Token (Must match API_SECRET_KEY in FastAPI backend)
 const char* DEVICE_SECRET_TOKEN = "military_box_secret_token_2026";

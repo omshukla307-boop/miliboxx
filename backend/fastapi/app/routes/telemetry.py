@@ -20,6 +20,9 @@ class TelemetryInput(BaseModel):
     temperature: float | None = None
     humidity: float | None = None
     shock_g: float | None = None
+    vibration_detected: bool | None = None
+    door_open: bool | None = None
+    battery_voltage: float | None = None
     latitude: float | None = None
     longitude: float | None = None
     lid_open: bool | None = None
@@ -34,20 +37,25 @@ class TelemetryInput(BaseModel):
 def record_telemetry(payload: TelemetryInput):
     dev_id = payload.device_id or payload.container_id or "ESP32_MILITARY_BOX_01"
     now_iso = payload.timestamp or datetime.utcnow().isoformat()
+    
+    is_vibration = payload.vibration_detected if payload.vibration_detected is not None else bool(payload.shock_g and payload.shock_g > 2.0)
+    is_door_open = payload.door_open if payload.door_open is not None else bool(payload.lid_open)
+    
     try:
         entry = {
             "device_id": dev_id,
             "temperature": payload.temperature,
             "humidity": payload.humidity,
-            "vibration_detected": bool(payload.shock_g and payload.shock_g > 2.0),
-            "door_open": bool(payload.lid_open),
+            "vibration_detected": is_vibration,
+            "door_open": is_door_open,
+            "battery_voltage": payload.battery_voltage,
             "latitude": payload.latitude,
             "longitude": payload.longitude,
             "timestamp": now_iso
         }
         entry = {k: v for k, v in entry.items() if v is not None}
         res = supabase.table("sensor_telemetry").insert(entry).execute()
-        return {"status": "ok", "message": "Telemetry recorded", "data": res.data}
+        return {"status": "ok", "message": "Telemetry recorded successfully", "data": res.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

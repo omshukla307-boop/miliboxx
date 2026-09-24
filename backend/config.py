@@ -19,13 +19,13 @@ class Settings:
     TEMP_LOW_THRESHOLD: float = -10.0  # Celsius
     BATTERY_LOW_THRESHOLD: float = 3.3  # Volts
 
-    # Anvil Blockchain Configuration
-    BLOCKCHAIN_API_URL: str = os.getenv("BLOCKCHAIN_API_URL", "http://127.0.0.1:8545")
-    BLOCKCHAIN_API_KEY: str = os.getenv("BLOCKCHAIN_API_KEY", "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
-    ANVIL_RPC_URL: str = os.getenv("ANVIL_RPC_URL", "http://127.0.0.1:8545")
-    CHAIN_ID: int = int(os.getenv("CHAIN_ID", "31337"))
-    CONTRACT_ADDRESS: str = os.getenv("CONTRACT_ADDRESS", "0x9fE46736679d2D9a65F0992F2272dE9f3c7FA6e0")
+    # Polygon Amoy Blockchain Configuration
+    BLOCKCHAIN_RPC_URL: str = os.getenv("BLOCKCHAIN_RPC_URL", "https://polygon-amoy-bor-rpc.publicnode.com")
+    BLOCKCHAIN_API_URL: str = os.getenv("BLOCKCHAIN_API_URL", BLOCKCHAIN_RPC_URL)
+    BLOCKCHAIN_PRIVATE_KEY: str = os.getenv("BLOCKCHAIN_PRIVATE_KEY", "0x6f556327028df3bd3d76af89197bcdf10cc7c29708cf2ced7b7dfb50b230b04f")
+    CHAIN_ID: int = int(os.getenv("CHAIN_ID", "80002"))
+    CONTRACT_ADDRESS: str = os.getenv("CONTRACT_ADDRESS", "0x922289128a62Ca288Fd9D04558cacbe6842955fa")
     CONTRACT_NAME: str = os.getenv("CONTRACT_NAME", "ContainerAudit")
-    WALLET_ADDRESS: str = os.getenv("WALLET_ADDRESS", "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")
+    WALLET_ADDRESS: str = os.getenv("WALLET_ADDRESS", "0x5b14aC333307b348c501dfe4169487d60cE16dFe")
 
 settings = Settings()
