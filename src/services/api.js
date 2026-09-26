@@ -38,12 +38,43 @@ api.interceptors.response.use(
   }
 );
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://fpxpyvfeionyxfptigmy.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZweHB5dmZlaW9ueXhmcHRpZ215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMTI0MTksImV4cCI6MjEwMjg4ODQxOX0.DgK6kzbTFdpYGv9MsxneGDsco1THxgFdF4KVTIZQ4a8';
+
+export const fetchSupabaseDirect = async (table, select = '*', orderField = 'created_at') => {
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/${table}?select=${select}&order=${orderField}.desc&limit=50`;
+    const res = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn(`[Supabase Direct] Failed fetching ${table}:`, err);
+    return null;
+  }
+};
+
 // ─────────────────────────────────────────────────────────────────
 // Container endpoints
 // ─────────────────────────────────────────────────────────────────
 export const containerAPI = {
-  /** GET /devices/ — returns { devices: [...] } */
-  getAll: () => api.get('/devices/'),
+  /** GET /devices/ — returns { devices: [...] } with Supabase fallback */
+  getAll: async () => {
+    try {
+      const res = await api.get('/devices/');
+      if (res.data && (res.data.devices || res.data.containers || Array.isArray(res.data))) {
+        return res;
+      }
+    } catch (err) {
+      console.warn('[API] /devices/ failed — attempting direct Supabase query...');
+    }
+    const devices = await fetchSupabaseDirect('devices', '*', 'created_at');
+    return { data: { devices: devices || [] } };
+  },
 
   /** GET /devices/{id} — returns a device */
   getById: (id) => api.get(`/devices/${id}`),
@@ -54,8 +85,17 @@ export const containerAPI = {
 };
 
 export const telemetryAPI = {
-  /** GET /telemetry/ — get all recent sensor telemetry */
-  getAll: (limit = 50) => api.get('/telemetry/', { params: { limit } }),
+  /** GET /telemetry/ — get all recent sensor telemetry with Supabase fallback */
+  getAll: async (limit = 50) => {
+    try {
+      const res = await api.get('/telemetry/', { params: { limit } });
+      if (res.data && (res.data.telemetry || Array.isArray(res.data))) return res;
+    } catch (err) {
+      console.warn('[API] /telemetry/ failed — attempting direct Supabase query...');
+    }
+    const telemetry = await fetchSupabaseDirect('sensor_telemetry', '*', 'timestamp');
+    return { data: { telemetry: telemetry || [] } };
+  },
 
   /** GET /telemetry/{id} */
   getByDevice: (deviceId, limit = 50) => api.get(`/telemetry/${deviceId}`, { params: { limit } }),
@@ -74,8 +114,17 @@ export const postTelemetry = (payload) => api.post('/api/telemetry', payload);
 // Alert endpoints
 // ─────────────────────────────────────────────────────────────────
 export const alertAPI = {
-  /** GET /alerts/ */
-  getAll: () => api.get('/alerts/'),
+  /** GET /alerts/ with Supabase fallback */
+  getAll: async () => {
+    try {
+      const res = await api.get('/alerts/');
+      if (res.data && (res.data.alerts || Array.isArray(res.data))) return res;
+    } catch (err) {
+      console.warn('[API] /alerts/ failed — attempting direct Supabase query...');
+    }
+    const alerts = await fetchSupabaseDirect('alerts', '*', 'created_at');
+    return { data: { alerts: alerts || [] } };
+  },
 
   /** The deployed backend has no acknowledge endpoint. */
   acknowledge: async () => undefined,
