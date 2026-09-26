@@ -112,18 +112,62 @@ export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const simCounter = useRef(200);
 
-  // ── Fetch containers from FastAPI (with mock fallback) ──────────
+  // ── Fetch containers & live telemetry from FastAPI / Supabase ────
   const fetchContainers = useCallback(async () => {
     try {
-      const { data } = await containerAPI.getAll();
-      const normalized = Array.isArray(data)
-        ? data.map(normalizeContainer)
-        : (data.containers ?? data.devices)?.map(normalizeContainer) ?? [];
-      dispatch({ type: 'SET_CONTAINERS', payload: normalized });
-      dispatch({ type: 'SET_BACKEND_STATUS', payload: true });
+      // 1. Fetch devices list
+      let deviceList = [];
+      try {
+        const { data: devRes } = await containerAPI.getAll();
+        deviceList = Array.isArray(devRes)
+          ? devRes
+          : (devRes.containers ?? devRes.devices) ?? [];
+      } catch (_) {}
+
+      // 2. Fetch live sensor telemetry records
+      let telemetryList = [];
+      try {
+        const { data: telRes } = await telemetryAPI.getAll(50);
+        telemetryList = Array.isArray(telRes) ? telRes : (telRes.telemetry ?? telRes.data) ?? [];
+      } catch (_) {}
+
+      // Map telemetry by device_id to get latest real readings
+      const latestTelemetryByDevice = {};
+      for (const t of telemetryList) {
+        const devId = t.device_id ?? 'ESP32_MILITARY_BOX_01';
+        if (!latestTelemetryByDevice[devId]) {
+          latestTelemetryByDevice[devId] = t;
+        }
+      }
+
+      // Build real containers list from database
+      const realContainers = [];
+      const processedIds = new Set();
+
+      for (const d of deviceList) {
+        const devId = d.device_id ?? d.id;
+        const latestTel = latestTelemetryByDevice[devId] || {};
+        const combined = { ...d, ...latestTel, device_id: devId };
+        realContainers.push(normalizeContainer(combined));
+        processedIds.add(devId);
+      }
+
+      // Also include any telemetry devices not yet in devices table
+      for (const [devId, latestTel] of Object.entries(latestTelemetryByDevice)) {
+        if (!processedIds.has(devId)) {
+          realContainers.push(normalizeContainer(latestTel));
+          processedIds.add(devId);
+        }
+      }
+
+      if (realContainers.length > 0) {
+        dispatch({ type: 'SET_CONTAINERS', payload: realContainers });
+        dispatch({ type: 'SET_BACKEND_STATUS', payload: true });
+      } else {
+        dispatch({ type: 'SET_BACKEND_STATUS', payload: true });
+      }
     } catch (err) {
-      console.warn('[API] /containers failed — using mock data:', err.message);
-      // Already seeded with mock; just mark backend offline
+      console.warn('[API] /containers fetch failed:', err.message);
       dispatch({ type: 'SET_BACKEND_STATUS', payload: false });
     }
   }, []);

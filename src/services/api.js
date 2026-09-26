@@ -53,11 +53,17 @@ export const containerAPI = {
     api.get(`/telemetry/${id}`, { params: { limit: hours } }),
 };
 
-// ─────────────────────────────────────────────────────────────────
-// Telemetry endpoints
-// ─────────────────────────────────────────────────────────────────
 export const telemetryAPI = {
-  /** POST /api/telemetry — send telemetry payload from HITL simulator */
+  /** GET /telemetry/ — get all recent sensor telemetry */
+  getAll: (limit = 50) => api.get('/telemetry/', { params: { limit } }),
+
+  /** GET /telemetry/{id} */
+  getByDevice: (deviceId, limit = 50) => api.get(`/telemetry/${deviceId}`, { params: { limit } }),
+
+  /** GET /telemetry/{id}/latest */
+  getLatest: (deviceId) => api.get(`/telemetry/${deviceId}/latest`),
+
+  /** POST /api/telemetry — send telemetry payload */
   postTelemetry: (payload) => api.post('/api/telemetry', payload),
 };
 

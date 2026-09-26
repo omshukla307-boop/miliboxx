@@ -63,12 +63,43 @@ def record_telemetry(payload: TelemetryInput):
 # =========================
 # GET TELEMETRY HISTORY
 # =========================
+# GET ALL RECENT TELEMETRY
+# =========================
+
+@router.get("/")
+def get_all_telemetry(
+    limit: int = Query(default=50, ge=1, le=500)
+):
+    try:
+        response = (
+            supabase
+            .table("sensor_telemetry")
+            .select("*")
+            .order("timestamp", desc=True)
+            .limit(limit)
+            .execute()
+        )
+
+        return {
+            "count": len(response.data),
+            "telemetry": response.data
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# =========================
+# GET TELEMETRY HISTORY
+# =========================
 
 @router.get("/{device_id}")
 def get_telemetry(
     device_id: str,
-    limit: int = Query(default=50, ge=1, le=500),
-    current_user=Depends(get_current_user)
+    limit: int = Query(default=50, ge=1, le=500)
 ):
     try:
         response = (
@@ -100,8 +131,7 @@ def get_telemetry(
 
 @router.get("/{device_id}/latest")
 def get_latest_telemetry(
-    device_id: str,
-    current_user=Depends(get_current_user)
+    device_id: str
 ):
     try:
         response = (

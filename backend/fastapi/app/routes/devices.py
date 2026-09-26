@@ -68,9 +68,7 @@ def create_device(
 # =========================
 
 @router.get("/")
-def get_devices(
-    current_user=Depends(get_current_user)
-):
+def get_devices():
 
     try:
         response = (
@@ -97,8 +95,7 @@ def get_devices(
 
 @router.get("/{device_id}")
 def get_device(
-    device_id: str,
-    current_user=Depends(get_current_user)
+    device_id: str
 ):
 
     try:
