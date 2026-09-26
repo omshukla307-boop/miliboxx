@@ -1,19 +1,39 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Zap, MapPin, Clock, Filter } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 import StatusBadge from '../components/ui/StatusBadge';
-import { shockEvents } from '../services/mockData';
 
 const LEVELS = ['All', 'HIGH', 'MEDIUM', 'LOW'];
 
 export default function ShockHistory() {
+  const { state } = useApp();
   const [filter, setFilter] = useState('All');
 
-  const filtered = shockEvents.filter((e) => filter === 'All' || e.level === filter);
+  const realShockEvents = useMemo(() => {
+    if (!state.alerts || state.alerts.length === 0) return [];
+
+    return state.alerts.map((a) => {
+      const sev = (a.severity || 'INFO').toUpperCase();
+      const level = sev === 'CRITICAL' ? 'HIGH' : sev === 'WARNING' ? 'MEDIUM' : 'LOW';
+
+      return {
+        timestamp: a.timestamp || 'Just now',
+        container: a.container || 'ESP32_MILITARY_BOX_01',
+        level: level,
+        location: a.location || 'Alpha Base',
+        status: a.status || 'UNREAD',
+        action: a.status === 'RESOLVED' ? 'Inspected & Cleared' : 'Inspect Box Hardware',
+        rawMessage: a.event
+      };
+    });
+  }, [state.alerts]);
+
+  const filtered = realShockEvents.filter((e) => filter === 'All' || e.level === filter);
 
   return (
     <div className="page-container">
       <p className="text-xs text-text-secondary">
-        Chronological log of all detected shock and impact events across the fleet
+        Chronological log of all detected shock and impact events across the fleet from live sensors
       </p>
 
       {/* Filters */}
@@ -33,10 +53,10 @@ export default function ShockHistory() {
       {/* Summary */}
       <div className="flex gap-3 flex-wrap">
         {[
-          { label: 'Total Events', value: shockEvents.length, color: 'text-text-primary' },
-          { label: 'High Severity', value: shockEvents.filter((e) => e.level === 'HIGH').length, color: 'text-status-critical' },
-          { label: 'Medium', value: shockEvents.filter((e) => e.level === 'MEDIUM').length, color: 'text-status-warning' },
-          { label: 'Low', value: shockEvents.filter((e) => e.level === 'LOW').length, color: 'text-status-info' },
+          { label: 'Total Events', value: realShockEvents.length, color: 'text-text-primary' },
+          { label: 'High Severity', value: realShockEvents.filter((e) => e.level === 'HIGH').length, color: 'text-status-critical' },
+          { label: 'Medium', value: realShockEvents.filter((e) => e.level === 'MEDIUM').length, color: 'text-status-warning' },
+          { label: 'Low', value: realShockEvents.filter((e) => e.level === 'LOW').length, color: 'text-status-info' },
         ].map(({ label, value, color }) => (
           <div key={label} className="card px-4 py-2.5 flex items-center gap-3">
             <Zap size={14} className={color} />
@@ -89,7 +109,7 @@ export default function ShockHistory() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center text-text-muted py-8">
-                    No shock events match the current filter.
+                    No shock events recorded from hardware sensors.
                   </td>
                 </tr>
               )}

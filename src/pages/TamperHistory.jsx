@@ -1,27 +1,52 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ShieldAlert, ShieldCheck, ShieldX, MapPin, Clock, Filter } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 import StatusBadge from '../components/ui/StatusBadge';
-import { tamperEvents } from '../services/mockData';
 
 const EVENT_LABELS = {
   UNAUTHORIZED_OPEN: { label: 'Unauthorized Opening', icon: ShieldX,     cls: 'text-status-critical' },
   LID_OPENED:        { label: 'Lid Opened',           icon: ShieldAlert, cls: 'text-status-warning'  },
+  VIBRATION_TAMPER:  { label: 'Vibration Tamper',     icon: ShieldAlert, cls: 'text-status-warning'  },
+  DOOR_OPEN:         { label: 'Door Intrusion',       icon: ShieldX,     cls: 'text-status-critical' },
   CONTAINER_SECURED: { label: 'Container Secured',    icon: ShieldCheck, cls: 'text-status-normal'   },
   LOCK_RESTORED:     { label: 'Lock Restored',        icon: ShieldCheck, cls: 'text-status-normal'   },
   CONTAINER_SEALED:  { label: 'Container Sealed',     icon: ShieldCheck, cls: 'text-status-normal'   },
 };
 
-const FILTERS = ['All', 'UNAUTHORIZED_OPEN', 'LID_OPENED', 'CONTAINER_SECURED'];
+const FILTERS = ['All', 'UNAUTHORIZED_OPEN', 'LID_OPENED', 'VIBRATION_TAMPER', 'CONTAINER_SECURED'];
 
 export default function TamperHistory() {
+  const { state } = useApp();
   const [filter, setFilter] = useState('All');
 
-  const filtered = tamperEvents.filter((e) => filter === 'All' || e.event === filter);
+  // Map real live alerts from AppContext / Supabase to tamper event records
+  const realTamperEvents = useMemo(() => {
+    if (!state.alerts || state.alerts.length === 0) return [];
+    
+    return state.alerts.map((a) => {
+      const evtStr = (a.event || '').toLowerCase();
+      const eventType = evtStr.includes('vibration') || evtStr.includes('shock') ? 'VIBRATION_TAMPER'
+        : evtStr.includes('door') || evtStr.includes('lid') || evtStr.includes('open') ? 'UNAUTHORIZED_OPEN'
+        : a.severity === 'CRITICAL' ? 'UNAUTHORIZED_OPEN'
+        : 'LID_OPENED';
+
+      return {
+        timestamp: a.timestamp || 'Just now',
+        container: a.container || 'ESP32_MILITARY_BOX_01',
+        event: eventType,
+        location: a.location || 'Alpha Base',
+        verification: a.status === 'RESOLVED' ? 'VERIFIED' : 'FAILED',
+        rawMessage: a.event
+      };
+    });
+  }, [state.alerts]);
+
+  const filtered = realTamperEvents.filter((e) => filter === 'All' || e.event === filter);
 
   return (
     <div className="page-container">
       <p className="text-xs text-text-secondary">
-        Security and access events for all monitored containers
+        Real-time security and tamper access events logged from hardware sensors
       </p>
 
       {/* Filters */}
@@ -67,7 +92,7 @@ export default function TamperHistory() {
                     <td>
                       <div className={`flex items-center gap-2 text-sm ${cfg.cls}`}>
                         <Icon size={13} />
-                        <span className="font-medium">{cfg.label}</span>
+                        <span className="font-medium">{e.rawMessage || cfg.label}</span>
                       </div>
                     </td>
                     <td>
@@ -82,7 +107,7 @@ export default function TamperHistory() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={5} className="text-center text-text-muted py-8">
-                    No tamper events match the current filter.
+                    No tamper events detected from live hardware sensors.
                   </td>
                 </tr>
               )}
