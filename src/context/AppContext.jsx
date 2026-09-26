@@ -96,15 +96,20 @@ function normalizeContainer(raw) {
   const id = raw.device_id ?? raw.id ?? raw.container_id ?? 'ESP32_MILITARY_BOX_01';
   const rawStatus = (raw.status ?? 'SECURED').toUpperCase();
   const status = (rawStatus === 'ACTIVE' || rawStatus === 'ONLINE') ? 'SECURED' : rawStatus;
-  const locName = raw.location_label ?? raw.location_name ?? raw.location?.name ?? 'Tactical Base';
-  const lat = raw.latitude ?? raw.location?.lat ?? (id.includes('02') ? 19.0760 : 28.6139);
-  const lng = raw.longitude ?? raw.location?.lng ?? (id.includes('02') ? 72.8777 : 77.2090);
+  
+  const rawLat = raw.latitude ?? raw.location?.lat;
+  const rawLng = raw.longitude ?? raw.location?.lng;
+  const lat = typeof rawLat === 'number' && !isNaN(rawLat) ? rawLat : (parseFloat(rawLat) || (id.includes('02') ? 19.0760 : id.includes('03') ? 12.9716 : 28.6139));
+  const lng = typeof rawLng === 'number' && !isNaN(rawLng) ? rawLng : (parseFloat(rawLng) || (id.includes('02') ? 72.8777 : id.includes('03') ? 77.5946 : 77.2090));
+
+  const locName = raw.location_label ?? raw.location_name ?? raw.location?.name ?? `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E`;
+  const isDoorOpen = raw.door_open === true || raw.tamper === true;
 
   return {
     id: id,
     name: raw.name ?? id,
-    status: status,
-    lock: raw.lock_status ?? raw.lock ?? 'SECURED',
+    status: isDoorOpen ? 'TAMPERED' : status,
+    lock: isDoorOpen ? 'OPEN' : (raw.lock_status ?? raw.lock ?? 'SECURED'),
     temp: raw.temperature ?? raw.temp ?? 24.2,
     humidity: raw.humidity ?? 55,
     battery: raw.battery ?? 92,
@@ -115,7 +120,7 @@ function normalizeContainer(raw) {
       lng: lng,
     },
     route: raw.route ?? [],
-    lastEvent: raw.last_event ?? raw.lastEvent ?? 'Normal monitoring',
+    lastEvent: isDoorOpen ? 'Lid/Door Tamper Detected' : (raw.last_event ?? raw.lastEvent ?? 'Normal monitoring'),
     updatedAgo: raw.updated_ago ?? raw.updatedAgo ?? (raw.last_seen ? new Date(raw.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'just now'),
   };
 }
