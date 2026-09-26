@@ -138,6 +138,21 @@ export const alertAPI = {
 // ─────────────────────────────────────────────────────────────────
 export const blockchainAPI = {
   /** GET /blockchain/status */
+  getStatus: () => api.get('/blockchain/status'),
+
+  /** GET /blockchain/events/{id} */
+  getEvents: async (containerId = 'ESP32_MILITARY_BOX_01') => {
+    try {
+      const res = await api.get(`/blockchain/events/${containerId}`);
+      if (res.data && (res.data.events || Array.isArray(res.data))) return res;
+    } catch (err) {
+      console.warn('[API] /blockchain/events/ failed — attempting direct Supabase query...');
+    }
+    const events = await fetchSupabaseDirect('blockchain_audit_logs', '*', 'created_at');
+    return { data: { events: events || [] } };
+  },
+
+  /** GET /blockchain/status */
   getLogs: () => api.get('/blockchain/status'),
 };
 

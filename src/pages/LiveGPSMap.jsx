@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapContainer, CircleMarker, Polyline, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Navigation, Clock, Gauge } from 'lucide-react';
@@ -14,20 +14,26 @@ function markerColor(status) {
   return '#22c55e';
 }
 
-// Component to fly to selected container
+// Component to fly to selected container safely
 function MapFlyTo({ center }) {
   const map = useMap();
-  if (center) map.flyTo(center, 9, { duration: 1.2 });
+  useEffect(() => {
+    if (center && Array.isArray(center) && typeof center[0] === 'number' && !isNaN(center[0])) {
+      map.flyTo(center, 9, { duration: 1.0 });
+    }
+  }, [center, map]);
   return null;
 }
 
 export default function LiveGPSMap() {
   const { state } = useApp();
   const { containers } = state;
-  const [selectedId, setSelectedId] = useState(() => containers[0]?.id);
+  const [selectedId, setSelectedId] = useState(() => containers[0]?.id || 'ESP32_MILITARY_BOX_01');
 
   const selected = containers.find((c) => c.id === selectedId) || containers[0];
-  const mapCenter = [20.5937, 78.9629];
+  const targetLat = typeof selected?.location?.lat === 'number' ? selected.location.lat : 28.6139;
+  const targetLng = typeof selected?.location?.lng === 'number' ? selected.location.lng : 77.2090;
+  const mapCenter = [targetLat, targetLng];
   const routePositions = selected?.route ? selected.route.map((r) => [r.lat, r.lng]) : [];
 
   return (
@@ -36,13 +42,13 @@ export default function LiveGPSMap() {
       <div className="flex-1 relative">
         <MapContainer
           center={mapCenter}
-          zoom={5}
+          zoom={6}
           style={{ height: '100%', width: '100%', minHeight: 400 }}
           zoomControl={true}
           scrollWheelZoom={true}
         >
           <ThemedTileLayer />
-          <MapFlyTo center={selected ? [selected.location.lat, selected.location.lng] : null} />
+          <MapFlyTo center={[targetLat, targetLng]} />
 
           {/* Route for selected */}
           {routePositions.length > 1 && (
