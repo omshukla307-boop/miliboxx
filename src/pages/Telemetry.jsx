@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import TelemetryLineChart from '../components/charts/TelemetryLineChart';
+import { telemetryAPI } from '../services/api';
 import { generateTelemetry } from '../services/mockData';
 
 const TIME_RANGES = ['Last 1 Hour', 'Last 6 Hours', 'Last 24 Hours', 'Last 7 Days'];
@@ -9,17 +10,40 @@ const SENSORS = ['All', 'Temperature', 'Humidity', 'Shock'];
 export default function Telemetry() {
   const { state } = useApp();
   const { containers } = state;
-  const [container, setContainer] = useState(() => containers[0]?.id || 'ALPHA-001');
+  const [container, setContainer] = useState(() => containers[0]?.id || 'ESP32_MILITARY_BOX_01');
   const [timeRange, setTimeRange] = useState('Last 24 Hours');
   const [sensor, setSensor] = useState('All');
+  const [livePoints, setLivePoints] = useState(null);
 
   const hours = timeRange === 'Last 1 Hour' ? 1
     : timeRange === 'Last 6 Hours' ? 6
     : timeRange === 'Last 7 Days' ? 168
     : 24;
 
-  const points = hours <= 1 ? 60 : hours <= 6 ? 72 : hours <= 24 ? 48 : 84;
-  const telemetry = useMemo(() => generateTelemetry(container || containers[0]?.id, hours, points), [container, containers, hours, points]);
+  const pointsCount = hours <= 1 ? 60 : hours <= 6 ? 72 : hours <= 24 ? 48 : 84;
+
+  useEffect(() => {
+    const targetId = container || containers[0]?.id || 'ESP32_MILITARY_BOX_01';
+    telemetryAPI.getByDevice(targetId)
+      .then((res) => {
+        const raw = res.data?.telemetry || res.data || [];
+        if (Array.isArray(raw) && raw.length > 0) {
+          const formatted = raw.map((item) => ({
+            label: item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now',
+            temp: item.temperature ?? 24.5,
+            humidity: item.humidity ?? 55,
+            shock: item.vibration_detected ? 1 : 0
+          })).reverse();
+          setLivePoints(formatted);
+        }
+      })
+      .catch(() => {});
+  }, [container, containers]);
+
+  const telemetry = useMemo(() => {
+    if (livePoints && livePoints.length > 0) return livePoints;
+    return generateTelemetry(container || containers[0]?.id || 'ESP32_MILITARY_BOX_01', hours, pointsCount);
+  }, [livePoints, container, containers, hours, pointsCount]);
 
   const tempData  = telemetry.map((p) => ({ label: p.label, value: p.temp }));
   const humData   = telemetry.map((p) => ({ label: p.label, value: p.humidity }));

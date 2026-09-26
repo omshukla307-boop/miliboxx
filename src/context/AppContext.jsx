@@ -2,11 +2,7 @@ import {
   createContext, useContext, useReducer, useEffect,
   useRef, useCallback,
 } from 'react';
-import { containerAPI, alertAPI } from '../services/api';
-import {
-  containers as mockContainers,
-  initialAlerts as mockAlerts,
-} from '../services/mockData';
+import { containerAPI, alertAPI, telemetryAPI } from '../services/api';
 import useWebSocket from '../hooks/useWebSocket';
 
 const AppContext = createContext(null);
@@ -51,11 +47,11 @@ function appReducer(state, action) {
 }
 
 const initialState = {
-  containers:      mockContainers,   // pre-seeded with mock; replaced by API on connect
-  alerts:          mockAlerts,
+  containers:      [],
+  alerts:          [],
   containersLoaded: false,
   alertsLoaded:    false,
-  backendOnline:   false,            // true once first API call succeeds
+  backendOnline:   true,
 };
 
 // ── Helpers ───────────────────────────────────
@@ -201,36 +197,8 @@ export function AppProvider({ children }) {
     dispatch({ type: 'ADD_ALERT', payload: alert });
   }, []);
 
-  // WebSocket enabled when backend is online; falls back to mock interval
+  // WebSocket enabled when backend is online
   useWebSocket('/ws', handleWsMessage, state.backendOnline);
-
-  // ── Mock fallback: 12-second interval when backend is OFFLINE ──
-  useEffect(() => {
-    if (state.backendOnline) return; // real WS takes over
-
-    const EVENTS = [
-      { container: 'GOLF-031', event: 'GPS signal degraded',   severity: 'WARNING',  location: 'Pune'   },
-      { container: 'JULIET-011',event: 'Temperature rising',   severity: 'WARNING',  location: 'Raipur' },
-      { container: 'HOTEL-005', event: 'Route deviation minor', severity: 'WARNING',  location: 'Nagpur' },
-    ];
-    let idx = 0;
-    const interval = setInterval(() => {
-      const e = EVENTS[idx % EVENTS.length];
-      simCounter.current += 1;
-      const now = new Date();
-      dispatch({
-        type: 'ADD_ALERT',
-        payload: normalizeAlert({
-          id:        `SIM-${simCounter.current}`,
-          timestamp: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          status:    'UNREAD',
-          ...e,
-        }),
-      });
-      idx++;
-    }, 12000);
-    return () => clearInterval(interval);
-  }, [state.backendOnline]);
 
   // ── Refresh containers every 30 seconds ────────────────────────
   useEffect(() => {
