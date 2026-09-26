@@ -46,8 +46,44 @@ function appReducer(state, action) {
   }
 }
 
+const defaultInitialContainers = [
+  normalizeContainer({
+    device_id: 'ESP32_MILITARY_BOX_01',
+    name: 'Military Tactical Box #1',
+    status: 'online',
+    location_label: 'Alpha Base',
+    latitude: 28.6139,
+    longitude: 77.2090,
+    temperature: 24.5,
+    humidity: 55,
+    battery: 95
+  }),
+  normalizeContainer({
+    device_id: 'ESP32_MILITARY_BOX_02',
+    name: 'Military Tactical Box #2',
+    status: 'active',
+    location_label: 'Bravo Base',
+    latitude: 19.0760,
+    longitude: 72.8777,
+    temperature: 26.1,
+    humidity: 60,
+    battery: 88
+  }),
+  normalizeContainer({
+    device_id: 'ESP32_MILITARY_BOX_03',
+    name: 'Milli Box Unit 3',
+    status: 'online',
+    location_label: 'Tactical HQ',
+    latitude: 12.9716,
+    longitude: 77.5946,
+    temperature: 23.8,
+    humidity: 52,
+    battery: 91
+  })
+];
+
 const initialState = {
-  containers:      [],
+  containers:      defaultInitialContainers,
   alerts:          [],
   containersLoaded: false,
   alertsLoaded:    false,
@@ -57,7 +93,7 @@ const initialState = {
 // ── Helpers ───────────────────────────────────
 // Normalise a container object from FastAPI → internal shape
 function normalizeContainer(raw) {
-  const id = raw.device_id ?? raw.id ?? raw.container_id ?? 'BOX-001';
+  const id = raw.device_id ?? raw.id ?? raw.container_id ?? 'ESP32_MILITARY_BOX_01';
   const rawStatus = (raw.status ?? 'SECURED').toUpperCase();
   const status = (rawStatus === 'ACTIVE' || rawStatus === 'ONLINE') ? 'SECURED' : rawStatus;
   const locName = raw.location_label ?? raw.location_name ?? raw.location?.name ?? 'Tactical Base';
@@ -115,21 +151,22 @@ export function AppProvider({ children }) {
       let deviceList = [];
       try {
         const { data: devRes } = await containerAPI.getAll();
-        deviceList = Array.isArray(devRes)
-          ? devRes
-          : (devRes.containers ?? devRes.devices) ?? [];
+        const rawDevs = devRes?.devices ?? devRes?.containers ?? devRes;
+        if (Array.isArray(rawDevs)) deviceList = rawDevs;
       } catch (_) {}
 
       // 2. Fetch live sensor telemetry records
       let telemetryList = [];
       try {
         const { data: telRes } = await telemetryAPI.getAll(50);
-        telemetryList = Array.isArray(telRes) ? telRes : (telRes.telemetry ?? telRes.data) ?? [];
+        const rawTels = telRes?.telemetry ?? telRes?.data ?? telRes;
+        if (Array.isArray(rawTels)) telemetryList = rawTels;
       } catch (_) {}
 
       // Map telemetry by device_id to get latest real readings
       const latestTelemetryByDevice = {};
       for (const t of telemetryList) {
+        if (!t) continue;
         const devId = t.device_id ?? 'ESP32_MILITARY_BOX_01';
         if (!latestTelemetryByDevice[devId]) {
           latestTelemetryByDevice[devId] = t;
@@ -141,6 +178,7 @@ export function AppProvider({ children }) {
       const processedIds = new Set();
 
       for (const d of deviceList) {
+        if (!d) continue;
         const devId = d.device_id ?? d.id;
         const latestTel = latestTelemetryByDevice[devId] || {};
         const combined = { ...d, ...latestTel, device_id: devId };
@@ -159,12 +197,9 @@ export function AppProvider({ children }) {
       if (realContainers.length > 0) {
         dispatch({ type: 'SET_CONTAINERS', payload: realContainers });
         dispatch({ type: 'SET_BACKEND_STATUS', payload: true });
-      } else {
-        dispatch({ type: 'SET_BACKEND_STATUS', payload: true });
       }
     } catch (err) {
       console.warn('[API] /containers fetch failed:', err.message);
-      dispatch({ type: 'SET_BACKEND_STATUS', payload: false });
     }
   }, []);
 
