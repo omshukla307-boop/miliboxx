@@ -6,7 +6,7 @@ load_dotenv()
 
 class Settings:
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://fpxpyvfeionyxfptigmy.supabase.co")
-    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
+    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", os.getenv("SUPABASE_SERVICE_KEY", os.getenv("SUPABASE_ANON_KEY", "")))
     
     # ESP32 Device Authentication Token
     API_SECRET_KEY: str = os.getenv("API_SECRET_KEY", "military_box_secret_token_2026")

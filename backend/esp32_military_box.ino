@@ -13,6 +13,7 @@
  */
 
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
@@ -116,6 +117,9 @@ void connectWiFi() {
 }
 
 void sendTelemetryToFastAPI(String jsonString) {
+  WiFiClientSecure client;
+  client.setInsecure(); // Skip SSL certificate validation on ESP32 for HTTPS cloud URL
+  
   HTTPClient http;
   
   Serial.println("\n------------------------------------------");
@@ -123,7 +127,7 @@ void sendTelemetryToFastAPI(String jsonString) {
   Serial.println(FASTAPI_SERVER_URL);
   Serial.println("Payload: " + jsonString);
 
-  http.begin(FASTAPI_SERVER_URL);
+  http.begin(client, FASTAPI_SERVER_URL);
   http.addHeader("Content-Type", "application/json");
   // Attach Authentication Token Header
   http.addHeader("X-Device-Token", DEVICE_SECRET_TOKEN);
